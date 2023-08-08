@@ -12,17 +12,21 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Properties;
 import java.util.Random;
-import java.util.Vector;
+
+import static java.awt.Color.BLUE;
+import static java.awt.Color.RED;
+import static snake.Direction.DOWN;
+import static snake.Direction.LEFT;
+import static snake.Direction.RIGHT;
+import static snake.Direction.UP;
 
 
 public class SnakeFrame extends JFrame implements KeyListener, Runnable, ActionListener
 {
-	private int aX, aY, _area[][], frameSnakeHeight, frameSnakeWidth, sleep, incr,
-			snakeLength, level, lup, frameSnakeX, frameSnakeY;
+	private int aX, aY, _area[][], frameSnakeHeight, frameSnakeWidth, sleep, incr, level, lup, frameSnakeX, frameSnakeY;
 	private JPanel area[][];
-	private String direction;
-	private Vector snake;
-	private Color snakeHead, snakeTail, fieldArea, fieldBorder, food, obstacle;
+	private Snake snake;
+	private Color fieldArea, fieldBorder, food, obstacle;
 	private Thread t;
 	private boolean end, pause, isObstacle;
 	private MenuItem exit;
@@ -63,10 +67,6 @@ public class SnakeFrame extends JFrame implements KeyListener, Runnable, ActionL
 //		aY = 30;//размер поля по Y
 		area = new JPanel[aX][aY];//массив панелей
 		_area = new int[aX][aY];//массив с данными
-		direction = "UP";//направление хода змейки
-		snake = new Vector(3, 1);//динамическое представление змейки
-		snakeHead = Color.blue;//цвет головы змейки
-		snakeTail = Color.red;//цвет хвоста змейки
 		fieldArea = new Color(200, 200, 0);//цвет пустого поля
 		fieldBorder = Color.black;//цвет границы панели
 		obstacle = Color.darkGray;//цвет препятствия
@@ -79,7 +79,8 @@ public class SnakeFrame extends JFrame implements KeyListener, Runnable, ActionL
 		level = 1;//вспомогательная переменная
 		lup = 0;//вспомогательная переменная(+10 еды LevelUP)
 		incr = 0;//вспомогательная переменная(+60 тиков Sleep-50(увеличение скорости))
-		snakeLength = snake.size();//вспомогательная переменная(размер змейки)
+
+		snake = new Snake(aX, aY, BLUE, RED, UP);
 
 		setTitle("Snake");//заголовок главного окна
 		setSize(frameSnakeWidth, frameSnakeHeight);//установка размеров окна
@@ -108,11 +109,7 @@ public class SnakeFrame extends JFrame implements KeyListener, Runnable, ActionL
 	void play()
 	{
 		end = false;
-		int i = new Random().nextInt(aX);//начальное расположение змейки
-		int j = new Random().nextInt(aY);//...
-		snake.addElement(new Coord(i, j));//занесение координат начального расположения
-		snake.addElement(new Coord(i, j));//в динамическое представление змейки
-		snake.addElement(new Coord(i, j));//...
+
 		areaShow();//прорисовка поля
 		snakeShow();//прорисовка змейки
 		snakeInit();//инициализация змейки в массиве _area[][]
@@ -143,9 +140,9 @@ public class SnakeFrame extends JFrame implements KeyListener, Runnable, ActionL
 	void snakeInit()
 	{
 		Coord c;
-		for(int i = 0; i < snake.size(); i++)//обход вектора змейки
+		for(int i = 0; i < snake.getSize(); i++)//обход вектора змейки
 		{
-			c = (Coord)snake.elementAt(i);
+			c = snake.getElement(i);
 			if(i == 0)
 				_area[c.getY()][c.getX()] = 2;
 			else
@@ -154,14 +151,14 @@ public class SnakeFrame extends JFrame implements KeyListener, Runnable, ActionL
 	}//snakeInit()
 
 	//двмжение змейки
-	boolean snakeMove(String direction)
+	boolean snakeMove(Direction direction)
 	{
 		Coord c, c_buf, c_buf2;
-		c = (Coord)snake.elementAt(0);
-		c_buf2 = (Coord)snake.elementAt(1);
+		c = snake.getElement(0);
+		c_buf2 = snake.getElement(1);
 		boolean pd = false, isGrow = false;
 
-		if(direction == "UP")
+		if(direction.equals(UP))
 		{
 			if(c.getY() - 1 >= 0)
 			{
@@ -182,9 +179,9 @@ public class SnakeFrame extends JFrame implements KeyListener, Runnable, ActionL
 				if(_area[c.getY()][c.getX()] == 4)
 					return false;
 				_area[c.getY()][c.getX()] = 2;
-				for(int i = 1; i < snake.size(); i++)
+				for(int i = 1; i < snake.getSize(); i++)
 				{
-					c = (Coord)snake.elementAt(i);
+					c = snake.getElement(i);
 					c_buf = new Coord(c.getX(), c.getY());
 					c.setX(c_buf2.getX());
 					c.setY(c_buf2.getY());
@@ -195,7 +192,7 @@ public class SnakeFrame extends JFrame implements KeyListener, Runnable, ActionL
 			}
 		}//if(direction == "UP")
 
-		if(direction == "DOWN")
+		if(direction.equals(DOWN))
 		{
 			if(c.getY() + 1 <= aY - 1)
 			{
@@ -216,9 +213,9 @@ public class SnakeFrame extends JFrame implements KeyListener, Runnable, ActionL
 				if(_area[c.getY()][c.getX()] == 4)
 					return false;
 				_area[c.getY()][c.getX()] = 2;
-				for(int i = 1; i < snake.size(); i++)
+				for(int i = 1; i < snake.getSize(); i++)
 				{
-					c = (Coord)snake.elementAt(i);
+					c = snake.getElement(i);
 					c_buf = new Coord(c.getX(), c.getY());
 					c.setX(c_buf2.getX());
 					c.setY(c_buf2.getY());
@@ -229,7 +226,7 @@ public class SnakeFrame extends JFrame implements KeyListener, Runnable, ActionL
 			}
 		}//if(direction == "DOWN")
 
-		if(direction == "LEFT")
+		if(direction.equals(LEFT))
 		{
 			if(c.getX() - 1 >= 0)
 			{
@@ -250,9 +247,9 @@ public class SnakeFrame extends JFrame implements KeyListener, Runnable, ActionL
 				if(_area[c.getY()][c.getX()] == 4)
 					return false;
 				_area[c.getY()][c.getX()] = 2;
-				for(int i = 1; i < snake.size(); i++)
+				for(int i = 1; i < snake.getSize(); i++)
 				{
-					c = (Coord)snake.elementAt(i);
+					c = (Coord)snake.getElement(i);
 					c_buf = new Coord(c.getX(), c.getY());
 					c.setX(c_buf2.getX());
 					c.setY(c_buf2.getY());
@@ -263,7 +260,7 @@ public class SnakeFrame extends JFrame implements KeyListener, Runnable, ActionL
 			}
 		}//if(direction == "LEFT")
 
-		if(direction == "RIGHT")
+		if(direction.equals(RIGHT))
 		{
 			if(c.getX() + 1 <= aX - 1)
 			{
@@ -284,9 +281,9 @@ public class SnakeFrame extends JFrame implements KeyListener, Runnable, ActionL
 				if(_area[c.getY()][c.getX()] == 4)
 					return false;
 				_area[c.getY()][c.getX()] = 2;
-				for(int i = 1; i < snake.size(); i++)
+				for(int i = 1; i < snake.getSize(); i++)
 				{
-					c = (Coord)snake.elementAt(i);
+					c = snake.getElement(i);
 					c_buf = new Coord(c.getX(), c.getY());
 					c.setX(c_buf2.getX());
 					c.setY(c_buf2.getY());
@@ -309,7 +306,6 @@ public class SnakeFrame extends JFrame implements KeyListener, Runnable, ActionL
 				snake.addElement(new Coord(c_buf2.getX(), c_buf2.getY()));
 				_area[c_buf2.getY()][c_buf2.getX()] = 1;
 				incr++;
-				snakeLength++;
 				lup++;
 				foodShow();
 			}
@@ -323,13 +319,13 @@ public class SnakeFrame extends JFrame implements KeyListener, Runnable, ActionL
 	void snakeShow()
 	{
 		Coord c;
-		for(int i = 0; i < snake.size(); i++)
+		for(int i = 0; i < snake.getSize(); i++)
 		{
-			c = (Coord)snake.elementAt(i);
+			c = snake.getElement(i);
 			if(i == 0)
-				area[c.getY()][c.getX()].setBackground(snakeHead);
+				area[c.getY()][c.getX()].setBackground(snake.getHeadColor());
 			else
-				area[c.getY()][c.getX()].setBackground(snakeTail);
+				area[c.getY()][c.getX()].setBackground(snake.getTailColor());
 		}
 	}//snakeShow()
 
@@ -387,10 +383,10 @@ public class SnakeFrame extends JFrame implements KeyListener, Runnable, ActionL
 					if(incr == 30)
 						foodShow();
 
-					if(snakeMove(direction) == false || end == true)
+					if(!snakeMove(snake.getDirection()) || end)
 					{
 						JOptionPane.showMessageDialog(this, "Game Over!!! Your level is " + level +
-										". Snake Length " + snakeLength,
+										". Snake Length " + snake.getSize(),
 								"Snake", JOptionPane.WARNING_MESSAGE);
 						System.exit(0);
 						t.stop();
@@ -407,71 +403,47 @@ public class SnakeFrame extends JFrame implements KeyListener, Runnable, ActionL
 			System.exit(0);
 	}
 
-	//нажатие клавиши
-	public void keyPressed(KeyEvent ke)
-	{
-		if(ke.getKeyCode() == KeyEvent.VK_UP)
-		{
-			if(pause == false)
-			{
-				if(direction != "DOWN")
-				{
-					direction = "UP";
-					if(snakeMove(direction) == false)
-						end = true;
+	public void keyPressed(KeyEvent ke) {
+		if (!pause) {
+			if (ke.getKeyCode() == KeyEvent.VK_UP && !snake.getDirection().equals(DOWN)) {
+				snake.setDirection(UP);
+				if (!snakeMove(snake.getDirection())) {
+					end = true;
+				}
+			}
+			if (ke.getKeyCode() == KeyEvent.VK_DOWN && !snake.getDirection().equals(UP)) {
+				snake.setDirection(DOWN);
+				if (!snakeMove(snake.getDirection())) {
+					end = true;
+				}
+			}
+			if (ke.getKeyCode() == KeyEvent.VK_LEFT && !snake.getDirection().equals(RIGHT)) {
+				snake.setDirection(LEFT);
+				if (!snakeMove(snake.getDirection())) {
+					end = true;
+				}
+			}
+			if (ke.getKeyCode() == KeyEvent.VK_RIGHT && !snake.getDirection().equals(LEFT)) {
+				snake.setDirection(RIGHT);
+				if (!snakeMove(snake.getDirection())) {
+					end = true;
 				}
 			}
 		}
-		if(ke.getKeyCode() == KeyEvent.VK_DOWN)
-		{
-			if(pause == false)
-			{
-				if(direction != "UP")
-				{
-					direction = "DOWN";
-					if(snakeMove(direction) == false)
-						end = true;
-				}
-			}
+
+		if (ke.getKeyCode() == KeyEvent.VK_PAUSE) {
+			pause = !pause;
 		}
-		if(ke.getKeyCode() == KeyEvent.VK_LEFT)
-		{
-			if(pause == false)
-			{
-				if(direction != "RIGHT")
-				{
-					direction = "LEFT";
-					if(snakeMove(direction) == false)
-						end = true;
-				}
-			}
-		}
-		if(ke.getKeyCode() == KeyEvent.VK_RIGHT)
-		{
-			if(pause == false)
-			{
-				if(direction != "LEFT")
-				{
-					direction = "RIGHT";
-					if(snakeMove(direction) == false)
-						end = true;
-				}
-			}
-		}
-		if(ke.getKeyCode() == KeyEvent.VK_PAUSE)
-			if(pause == true)
-				pause = false;
-			else
-				pause = true;
-		if(ke.getKeyCode() == KeyEvent.VK_O)
-			if(isObstacle == true)
-			{
+
+		if (ke.getKeyCode() == KeyEvent.VK_O) {
+			if (isObstacle) {
 				isObstacle = false;
 				removeObstacles();
-			}
-			else
+			} else {
 				isObstacle = true;
-	}//keyPressed
+			}
+		}
+	}
 
 	//освобождение клавиши
 	public void keyReleased(KeyEvent ke) {}//keyReleased
