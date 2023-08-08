@@ -13,7 +13,8 @@ public class Snake {
 
 	private Direction direction;
 
-	public Snake(int startPositionX, int startPositionY, Color headColor, Color tailColor, Direction direction) {
+	public Snake(final int startPositionX, final int startPositionY,
+	             final Color headColor, final Color tailColor, final Direction direction) {
 		Random random = new Random();
 		int x = random.nextInt(startPositionX);
 		int y = random.nextInt(startPositionY);
@@ -32,11 +33,11 @@ public class Snake {
 		return body.size();
 	}
 
-	public Coord getElement(int i) {
+	public Coord getElement(final int i) {
 		return body.get(i);
 	}
 
-	public void addElement(Coord newElement) {
+	public void addElement(final Coord newElement) {
 		body.add(newElement);
 	}
 

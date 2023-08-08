@@ -11,9 +11,11 @@ import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Properties;
-import java.util.Random;
 
+import static java.awt.Color.BLACK;
 import static java.awt.Color.BLUE;
+import static java.awt.Color.DARK_GRAY;
+import static java.awt.Color.GREEN;
 import static java.awt.Color.RED;
 import static snake.Direction.DOWN;
 import static snake.Direction.LEFT;
@@ -23,10 +25,11 @@ import static snake.Direction.UP;
 
 public class SnakeFrame extends JFrame implements KeyListener, Runnable, ActionListener
 {
-	private int aX, aY, _area[][], frameSnakeHeight, frameSnakeWidth, sleep, incr, level, lup, frameSnakeX, frameSnakeY;
-	private JPanel area[][];
+	private int aX, aY, frameSnakeHeight, frameSnakeWidth, sleep, incr, level, lup, frameSnakeX, frameSnakeY;
+
+	private GameField gameField;
 	private Snake snake;
-	private Color fieldArea, fieldBorder, food, obstacle;
+
 	private Thread t;
 	private boolean end, pause, isObstacle;
 	private MenuItem exit;
@@ -65,12 +68,8 @@ public class SnakeFrame extends JFrame implements KeyListener, Runnable, ActionL
 //		frameSnakeY = 200;//расположение окна по Y
 //		aX = 30;//размер поля по X
 //		aY = 30;//размер поля по Y
-		area = new JPanel[aX][aY];//массив панелей
-		_area = new int[aX][aY];//массив с данными
-		fieldArea = new Color(200, 200, 0);//цвет пустого поля
-		fieldBorder = Color.black;//цвет границы панели
-		obstacle = Color.darkGray;//цвет препятствия
-		food = Color.green;//цвет еды
+		gameField = new GameField(aX, aY, GREEN, DARK_GRAY, new Color(200, 200, 0), BLACK);
+
 //		sleep = 500;//начальная скорость хода змейки
 		isObstacle = true;//true - будут появляться препятствия
 		pause = false;//true - игра будет приостановлена
@@ -110,45 +109,13 @@ public class SnakeFrame extends JFrame implements KeyListener, Runnable, ActionL
 	{
 		end = false;
 
-		areaShow();//прорисовка поля
-		snakeShow();//прорисовка змейки
-		snakeInit();//инициализация змейки в массиве _area[][]
-		foodShow();//прорисовка еды
+		gameField.initializeGameField(this);
+		gameField.showSnake(snake);
+		gameField.showFood();//прорисовка еды
+
 		t = new Thread(this, "MyTimer");//создание таймера
 		t.start();//запуск таймера(начало игры)
 	}//play()
-
-	//прорисовка еды
-	void foodShow()
-	{
-		int i = new Random().nextInt(aX - 1);
-		int j = new Random().nextInt(aY - 1);
-		_area[j][i] = 3;
-		area[j][i].setBackground(food);
-	}//foodShow();
-
-	//прописовка препятствия
-	void obstacleShow()
-	{
-		int i = new Random().nextInt(aX - 1);
-		int j = new Random().nextInt(aY - 1);
-		_area[j][i] = 4;
-		area[j][i].setBackground(obstacle);
-	}//foodShow();
-
-	//инициализация змейки в массиве _array[][]
-	void snakeInit()
-	{
-		Coord c;
-		for(int i = 0; i < snake.getSize(); i++)//обход вектора змейки
-		{
-			c = snake.getElement(i);
-			if(i == 0)
-				_area[c.getY()][c.getX()] = 2;
-			else
-				_area[c.getY()][c.getX()] = 1;
-		}
-	}//snakeInit()
 
 	//двмжение змейки
 	boolean snakeMove(Direction direction)
@@ -162,30 +129,33 @@ public class SnakeFrame extends JFrame implements KeyListener, Runnable, ActionL
 		{
 			if(c.getY() - 1 >= 0)
 			{
-				if(_area[c.getY() - 1][c.getX()] != 1)
+				if(!gameField.isBody(c.getX(),c.getY() - 1)) {
 					pd = true;
+				}
 			}
 			else
 				pd = true;
-			if(pd == true)
+			if(pd)
 			{
 				c_buf2 = new Coord(c.getX(), c.getY());
 				if(c.getY() - 1 < 0)
 					c.setY(aY - 1);
 				else
 					c.setY(c.getY() - 1);
-				if(_area[c.getY()][c.getX()] == 3)
+				if(gameField.isFood(c.getX(), c.getY())) {
 					isGrow = true;
-				if(_area[c.getY()][c.getX()] == 4)
+				}
+				if(gameField.isObstacle(c.getX(), c.getY())) {
 					return false;
-				_area[c.getY()][c.getX()] = 2;
+				}
+				gameField.setHead(c.getX(), c.getY());
 				for(int i = 1; i < snake.getSize(); i++)
 				{
 					c = snake.getElement(i);
 					c_buf = new Coord(c.getX(), c.getY());
 					c.setX(c_buf2.getX());
 					c.setY(c_buf2.getY());
-					_area[c.getY()][c.getX()] = 1;
+					gameField.setBody(c.getX(), c.getY());
 					c_buf2.setX(c_buf.getX());
 					c_buf2.setY(c_buf.getY());
 				}
@@ -196,30 +166,33 @@ public class SnakeFrame extends JFrame implements KeyListener, Runnable, ActionL
 		{
 			if(c.getY() + 1 <= aY - 1)
 			{
-				if(_area[c.getY() + 1][c.getX()] != 1)
+				if(!gameField.isBody(c.getX(), c.getY() + 1)) {
 					pd = true;
+				}
 			}
 			else
 				pd = true;
-			if(pd == true)
+			if(pd)
 			{
 				c_buf2 = new Coord(c.getX(), c.getY());
 				if(c.getY() + 1 > aY - 1)
 					c.setY(0);
 				else
 					c.setY(c.getY() + 1);
-				if(_area[c.getY()][c.getX()] == 3)
+				if(gameField.isFood(c.getX(), c.getY())) {
 					isGrow = true;
-				if(_area[c.getY()][c.getX()] == 4)
+				}
+				if(gameField.isObstacle(c.getX(), c.getY())) {
 					return false;
-				_area[c.getY()][c.getX()] = 2;
+				}
+				gameField.setHead(c.getX(), c.getY());
 				for(int i = 1; i < snake.getSize(); i++)
 				{
 					c = snake.getElement(i);
 					c_buf = new Coord(c.getX(), c.getY());
 					c.setX(c_buf2.getX());
 					c.setY(c_buf2.getY());
-					_area[c.getY()][c.getX()] = 1;
+					gameField.setBody(c.getX(), c.getY());
 					c_buf2.setX(c_buf.getX());
 					c_buf2.setY(c_buf.getY());
 				}
@@ -230,8 +203,9 @@ public class SnakeFrame extends JFrame implements KeyListener, Runnable, ActionL
 		{
 			if(c.getX() - 1 >= 0)
 			{
-				if(_area[c.getY()][c.getX() - 1] != 1)
+				if(!gameField.isBody(c.getX() - 1, c.getY())) {
 					pd = true;
+				}
 			}
 			else
 				pd = true;
@@ -242,18 +216,20 @@ public class SnakeFrame extends JFrame implements KeyListener, Runnable, ActionL
 					c.setX(aX - 1);
 				else
 					c.setX(c.getX() - 1);
-				if(_area[c.getY()][c.getX()] == 3)
+				if(gameField.isFood(c.getX(), c.getY())) {
 					isGrow = true;
-				if(_area[c.getY()][c.getX()] == 4)
+				}
+				if(gameField.isObstacle(c.getX(), c.getY())) {
 					return false;
-				_area[c.getY()][c.getX()] = 2;
+				}
+				gameField.setHead(c.getX(), c.getY());
 				for(int i = 1; i < snake.getSize(); i++)
 				{
-					c = (Coord)snake.getElement(i);
+					c = snake.getElement(i);
 					c_buf = new Coord(c.getX(), c.getY());
 					c.setX(c_buf2.getX());
 					c.setY(c_buf2.getY());
-					_area[c.getY()][c.getX()] = 1;
+					gameField.setBody(c.getX(), c.getY());
 					c_buf2.setX(c_buf.getX());
 					c_buf2.setY(c_buf.getY());
 				}
@@ -264,8 +240,9 @@ public class SnakeFrame extends JFrame implements KeyListener, Runnable, ActionL
 		{
 			if(c.getX() + 1 <= aX - 1)
 			{
-				if(_area[c.getY()][c.getX() + 1] != 1)
+				if(!gameField.isBody(c.getX() + 1, c.getY())) {
 					pd = true;
+				}
 			}
 			else
 				pd = true;
@@ -276,18 +253,20 @@ public class SnakeFrame extends JFrame implements KeyListener, Runnable, ActionL
 					c.setX(0);
 				else
 					c.setX(c.getX() + 1);
-				if(_area[c.getY()][c.getX()] == 3)
+				if(gameField.isFood(c.getX(), c.getY())) {
 					isGrow = true;
-				if(_area[c.getY()][c.getX()] == 4)
+				}
+				if(gameField.isObstacle(c.getX(), c.getY())) {
 					return false;
-				_area[c.getY()][c.getX()] = 2;
+				}
+				gameField.setHead(c.getX(), c.getY());
 				for(int i = 1; i < snake.getSize(); i++)
 				{
 					c = snake.getElement(i);
 					c_buf = new Coord(c.getX(), c.getY());
 					c.setX(c_buf2.getX());
 					c.setY(c_buf2.getY());
-					_area[c.getY()][c.getX()] = 1;
+					gameField.setBody(c.getX(), c.getY());
 					c_buf2.setX(c_buf.getX());
 					c_buf2.setY(c_buf.getY());
 				}
@@ -298,62 +277,21 @@ public class SnakeFrame extends JFrame implements KeyListener, Runnable, ActionL
 		{
 			if(isGrow == false)
 			{
-				area[c_buf2.getY()][c_buf2.getX()].setBackground(fieldArea);
-				_area[c_buf2.getY()][c_buf2.getX()] = 0;
+				gameField.showEmptyCell(c_buf2.getX(), c_buf2.getY());
 			}
 			else
 			{
 				snake.addElement(new Coord(c_buf2.getX(), c_buf2.getY()));
-				_area[c_buf2.getY()][c_buf2.getX()] = 1;
+				gameField.setBody(c_buf2.getX(), c_buf2.getY());
 				incr++;
 				lup++;
-				foodShow();
+				gameField.showFood();
 			}
 		}
 
-		snakeShow();
+		gameField.showSnake(snake);
 		return pd;
 	}//snakeMove()
-
-	//прорисовка змейки
-	void snakeShow()
-	{
-		Coord c;
-		for(int i = 0; i < snake.getSize(); i++)
-		{
-			c = snake.getElement(i);
-			if(i == 0)
-				area[c.getY()][c.getX()].setBackground(snake.getHeadColor());
-			else
-				area[c.getY()][c.getX()].setBackground(snake.getTailColor());
-		}
-	}//snakeShow()
-
-	//прорисовка поля
-	void areaShow()
-	{
-		for(int i = 0; i < aX; i++)
-			for(int j = 0; j < aY; j++)
-			{
-				area[i][j] = new JPanel();//создание панелей
-				area[i][j].setBackground(fieldArea);//установка цвета панели
-				area[i][j].setBorder(BorderFactory.createLineBorder(fieldBorder));//установка цвета границы панели
-				add(area[i][j]);//добавление панели к окну
-				_area[i][j] = 0;
-			}//for
-	}//areaShow()
-
-	//удаление препятствий
-	void removeObstacles()
-	{
-		for(int i = 0; i < aX; i++)
-			for(int j = 0; j < aY; j++)
-				if(_area[i][j] == 4)
-				{
-					_area[i][j] = 0;
-					area[i][j].setBackground(fieldArea);
-				}
-	}//removeObstacles()
 
 	//цикл игры
 	public void run()
@@ -370,7 +308,7 @@ public class SnakeFrame extends JFrame implements KeyListener, Runnable, ActionL
 							sleep = sleep - 50;
 						if(isObstacle == true)
 							if(level > 1)
-								obstacleShow();
+								gameField.showObstacle();
 						incr = 0;
 					}
 					Thread.sleep(sleep);
@@ -381,7 +319,7 @@ public class SnakeFrame extends JFrame implements KeyListener, Runnable, ActionL
 						lup = 0;
 					}
 					if(incr == 30)
-						foodShow();
+						gameField.showFood();
 
 					if(!snakeMove(snake.getDirection()) || end)
 					{
@@ -438,7 +376,7 @@ public class SnakeFrame extends JFrame implements KeyListener, Runnable, ActionL
 		if (ke.getKeyCode() == KeyEvent.VK_O) {
 			if (isObstacle) {
 				isObstacle = false;
-				removeObstacles();
+				gameField.removeObstacles();
 			} else {
 				isObstacle = true;
 			}
